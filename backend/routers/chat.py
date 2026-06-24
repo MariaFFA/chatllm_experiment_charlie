@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from backend.config import OPENROUTER_MODEL_DEFAULT
 from backend.database import get_db
-from backend.models import ChatMessage, Session
+from backend.models import ChatMessage, Session, User
+from backend.routers.auth import get_current_user
 from backend.schemas.chat import ChatRequest, ChatResponse
 from backend.services.openrouter import OpenRouterConfigError, generate_reply, stream_reply
 
@@ -23,14 +24,14 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-def _resolve_session(*, session_id: int | None, db: Session) -> Session:
+def _resolve_session(*, session_id: int | None, user_id: int | None, db: Session) -> Session:
     """Retorna a sessao; cria uma nova se session_id for None."""
     if session_id is not None:
-        session = db.query(Session).filter(Session.id == session_id).first()
+        session = db.query(Session).filter(Session.id == session_id, Session.user_id == user_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Sessao nao encontrada")
         return session
-    session = Session()
+    session = Session(user_id=user_id)
     db.add(session)
     db.commit()
     db.refresh(session)
@@ -70,7 +71,7 @@ async def _auto_title(*, session: Session, user_message: str, db: Session) -> No
 
 
 @router.post("/api/chat", response_model=ChatResponse)
-async def chat(payload: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
+async def chat(payload: ChatRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> ChatResponse:
     try:
         reply, model_name = await generate_reply(
             user_message=payload.message,
@@ -84,22 +85,22 @@ async def chat(payload: ChatRequest, db: Session = Depends(get_db)) -> ChatRespo
 
     resolved_model = payload.model or model_name or OPENROUTER_MODEL_DEFAULT
 
-    session = _resolve_session(session_id=payload.session_id, db=db)
+    session = _resolve_session(session_id=payload.session_id, user_id=user.id, db=db)
     session_key = str(session.id)
     await _auto_title(session=session, user_message=payload.message, db=db)
 
-    db.add(ChatMessage(session_key=session_key, role="user", content=payload.message, model=resolved_model))
-    db.add(ChatMessage(session_key=session_key, role="assistant", content=reply, model=resolved_model))
+    db.add(ChatMessage(session_key=session_key, user_id=user.id, role="user", content=payload.message, model=resolved_model))
+    db.add(ChatMessage(session_key=session_key, user_id=user.id, role="assistant", content=reply, model=resolved_model))
     db.commit()
 
     return ChatResponse(reply=reply, model=resolved_model)
 
 
 @router.post("/api/chat/stream")
-async def chat_stream(payload: ChatRequest, db: Session = Depends(get_db)) -> StreamingResponse:
+async def chat_stream(payload: ChatRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> StreamingResponse:
     # Valida session_id antes de iniciar o stream
     if payload.session_id is not None:
-        session = db.query(Session).filter(Session.id == payload.session_id).first()
+        session = db.query(Session).filter(Session.id == payload.session_id, Session.user_id == user.id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Sessao nao encontrada")
 
@@ -123,13 +124,14 @@ async def chat_stream(payload: ChatRequest, db: Session = Depends(get_db)) -> St
             return
 
         if full_reply.strip():
-            session = _resolve_session(session_id=payload.session_id, db=db)
+            session = _resolve_session(session_id=payload.session_id, user_id=user.id, db=db)
             session_key = str(session.id)
             await _auto_title(session=session, user_message=payload.message, db=db)
 
             db.add(
                 ChatMessage(
                     session_key=session_key,
+                    user_id=user.id,
                     role="user",
                     content=payload.message,
                     model=resolved_model,
@@ -138,6 +140,7 @@ async def chat_stream(payload: ChatRequest, db: Session = Depends(get_db)) -> St
             db.add(
                 ChatMessage(
                     session_key=session_key,
+                    user_id=user.id,
                     role="assistant",
                     content=full_reply,
                     model=resolved_model,
@@ -155,8 +158,8 @@ async def chat_stream(payload: ChatRequest, db: Session = Depends(get_db)) -> St
 
 
 @router.get("/api/sessions/{session_id}/messages")
-def get_session_messages(session_id: int, db: Session = Depends(get_db)):
-    session = db.query(Session).filter(Session.id == session_id).first()
+def get_session_messages(session_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    session = db.query(Session).filter(Session.id == session_id, Session.user_id == user.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Sessao nao encontrada")
     messages = (

@@ -1,9 +1,14 @@
 const API_BASE = window.location.origin;
 
+function authHeaders() {
+  const token = localStorage.getItem("auth_token");
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+}
+
 async function sendMessageStream({ message, history, onDelta, signal, sessionId }) {
   const response = await fetch(`${API_BASE}/api/chat/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ message, history, session_id: sessionId }),
     signal,
   });
@@ -58,7 +63,7 @@ async function sendMessageStream({ message, history, onDelta, signal, sessionId 
 }
 
 async function listSessions() {
-  const response = await fetch(`${API_BASE}/api/sessions`);
+  const response = await fetch(`${API_BASE}/api/sessions`, { headers: authHeaders() });
   if (!response.ok) throw new Error("Erro ao listar sessoes.");
   return response.json();
 }
@@ -66,7 +71,7 @@ async function listSessions() {
 async function createSession() {
   const response = await fetch(`${API_BASE}/api/sessions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: "{}",
   });
   if (!response.ok) throw new Error("Erro ao criar sessao.");
@@ -74,7 +79,7 @@ async function createSession() {
 }
 
 async function getSessionMessages(sessionId) {
-  const response = await fetch(`${API_BASE}/api/sessions/${sessionId}/messages`);
+  const response = await fetch(`${API_BASE}/api/sessions/${sessionId}/messages`, { headers: authHeaders() });
   if (!response.ok) throw new Error("Erro ao carregar mensagens da sessao.");
   return response.json();
 }
@@ -82,6 +87,7 @@ async function getSessionMessages(sessionId) {
 async function deleteSession(sessionId) {
   const response = await fetch(`${API_BASE}/api/sessions/${sessionId}`, {
     method: "DELETE",
+    headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Erro ao excluir sessao.");
 }

@@ -39,8 +39,17 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadSessions();
+    if (localStorage.getItem("auth_token")) {
+      loadSessions();
+    }
   }, []);
+
+  function handleLogout() {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_email");
+    localStorage.removeItem("auth_user_id");
+    window.location.reload();
+  }
 
   async function loadSessions() {
     try {
@@ -218,6 +227,13 @@ function App() {
               <line x1="4" y1="4" x2="12" y2="12" />
             </svg>
           </button>
+          <button className="logout-btn" onClick={handleLogout} title="Sair">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" />
+              <polyline points="10,12 14,8 10,4" />
+              <line x1="14" y1="8" x2="6" y2="8" />
+            </svg>
+          </button>
         </div>
         <button className="new-chat-btn" onClick={handleNewSession}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -306,5 +322,14 @@ function App() {
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+
+// Verifica se usuario esta autenticado
+const token = localStorage.getItem("auth_token");
+if (token) {
+  root.render(<App />);
+} else {
+  root.render(<AuthPage onAuthSuccess={(token, email, userId) => {
+    root.render(<App />);
+  }} />);
+}
 

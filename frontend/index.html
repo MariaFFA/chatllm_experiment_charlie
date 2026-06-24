@@ -272,7 +272,7 @@
 
       .sidebar-header {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         padding: 8px;
       }
 
@@ -412,6 +412,23 @@
         background: rgba(192, 57, 43, 0.08);
       }
 
+      .logout-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--muted);
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logout-btn:hover {
+        background: var(--user-bubble);
+        color: var(--text);
+      }
+
       /* ===== Modal ===== */
       .modal-overlay {
         position: fixed;
@@ -504,6 +521,7 @@
     <script type="text/babel" src="/frontend/src/api.js"></script>
     <script type="text/babel" src="/frontend/src/MessageContent.jsx"></script>
     <script type="text/babel" src="/frontend/src/Composer.jsx"></script>
+    <script type="text/babel" src="/frontend/src/Auth.jsx"></script>
     <script type="text/babel" src="/frontend/src/App.jsx"></script>
   </body>
 </html>
