@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from backend.models import ChatMessage
+from backend.models import ChatMessage, Session
 
 
 class TestChatMessage:
@@ -108,3 +108,72 @@ class TestChatMessage:
         db_session.refresh(msg)
 
         assert msg.content == long_text
+
+
+class TestSession:
+    def test_create_session_defaults(self, db_session):
+        """Deve criar uma sessao com valores padrao."""
+        session = Session()
+        db_session.add(session)
+        db_session.commit()
+        db_session.refresh(session)
+
+        assert session.id is not None
+        assert session.title == "Nova conversa"
+        assert isinstance(session.created_at, datetime)
+        assert isinstance(session.updated_at, datetime)
+
+    def test_session_custom_title(self, db_session):
+        """Deve criar uma sessao com titulo personalizado."""
+        session = Session(title="Minha conversa")
+        db_session.add(session)
+        db_session.commit()
+        db_session.refresh(session)
+
+        assert session.title == "Minha conversa"
+
+    def test_session_updated_at_updates(self, db_session):
+        """O campo updated_at deve mudar apos alteracao."""
+        session = Session()
+        db_session.add(session)
+        db_session.commit()
+        first_updated = session.updated_at
+
+        session.title = "Novo titulo"
+        db_session.commit()
+        db_session.refresh(session)
+
+        assert session.updated_at >= first_updated
+
+    def test_session_ordering(self, db_session):
+        """Sessoes devem ser ordenaveis por updated_at."""
+        import time
+
+        s1 = Session()
+        db_session.add(s1)
+        db_session.commit()
+        time.sleep(0.01)
+        s2 = Session()
+        db_session.add(s2)
+        db_session.commit()
+
+        results = db_session.query(Session).order_by(Session.updated_at.desc()).all()
+        assert results[0].id == s2.id
+        assert results[1].id == s1.id
+
+    def test_delete_session_cascades(self, db_session):
+        """Deletar uma sessao nao deve deletar mensagens (nao ha cascade)."""
+        session = Session()
+        db_session.add(session)
+        db_session.commit()
+
+        msg = ChatMessage(session_key=str(session.id), role="user", content="teste")
+        db_session.add(msg)
+        db_session.commit()
+
+        db_session.delete(session)
+        db_session.commit()
+
+        msgs = db_session.query(ChatMessage).filter(ChatMessage.session_key == str(session.id)).all()
+        # Mensagens permanecem (sem cascade configurado)
+        assert len(msgs) == 1

@@ -5,17 +5,22 @@
 **Hard rule**: AI agents must not edit this file and must not draft paste-ready content for it.
 
 ## The Problem
-_State clearly what you are trying to achieve and the architectural constraints, avoiding implementation specifics of HOW to do it. Focus on WHAT and WHY._
+Faça uma barra lateral direita em que ela irá ter o historico de conversas distintas que podem ser criadas e independente, tendo titulos que ajudem a lembrar do que aquela conversa tratava.
 
 ## Steps
-- [ ] _Decompose the problem into actionable logical steps._
-- [ ] _Each step should represent a verifiable piece of work._
+- [ ] Crar barra lateral direita
+- [ ] Criar botão para criar novas conversas
+- [ ] Criar abas na barra lateral com o historico das conversas das sessões, podendo dar continuidade nelas
+- [ ] Colocar titulos relacionados a conversa logo quando a conversa é iniciada, inclusive na aba
 
 ## Success Looks Like
-- [ ] _Define rigorous, observable criteria for success. E.g., The endpoint returns 200 OK with the user object, NOT Code compiles_
+- [ ] Quando criar uma sessão nova a conversa atual aparecer limpa.
+- [ ] Quando criar uma sessão nova aparecer uma nova aba com um titulo.
+- [ ] Quando acessar uma conversa diferente nas abas, aparecer o historico daquela conversa guardada com sucesso 200.
+- [ ] Quando enviar uma mensagem no chat ter sucesso 200.
 
 ## Notes
-- [ ] _Any specific edge cases, libraries to consider, or potential pitfalls._
+- [ ] Verifique se a integração com a api continua ocorrendo com sucesso.
 
 ---
 **⚠️ HUMAN ONLY**: This file is your strategic space. AI agents must not edit it.

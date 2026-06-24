@@ -5,25 +5,45 @@
 **Hard rule**: AI agents must not edit this file and must not draft paste-ready content for it.
 
 ## R — Repeat (The Problem)
-_State the problem in your own words. Confirm that you share the same mental model of the goal._
+Não era possivel ter acesso a conversas passadas, sendo perdido todo o conteudo gerado
 
 ## E — Examples
-_Provide concrete inputs and expected outputs that demonstrate the correctness. Base them on observable behavior._
 
-- **Happy Path Input**: ...
-  **Output**: ...
+- **Happy Path Input**: Acessar uma conversa do passado (ID da sessão)
+  **Output**: Historico da conversa (Lista com os conteudos, cargo e cronologia)
 
-- **Edge Case Input**: ...
-  **Output**: ...
+- **Edge Case Input**: Iniciar nova conversa, mas não enviar mensagem
+  **Output**: Não salvar conversa vazia
 
 ## A — Approach
-_Describe your high-level strategy conceptually. How did you design the solution?_
+Foi criado uma nova tabela com os dados de cada sessão, novas rotas e novo container para tratar das sessoes
 
 ## C — Code
-_Identify the most critical code changes, format as actual files, functions, or methods. Justify the intent of your design choices rather than just acknowledging the syntax changes._
+Foram criadas novas rotas a partir da api, separadas das api/chat para dar a independencia de cada sessão. Tendo as requisições feitas diretamente por elas
 
 ## T — Tests
-_Explain how the solution was validated, pointing to the actual test files, functions, or methods. Document any manual or automated tests._
+Foram feitos testes manuais como:
+* Criar nova sessão
+* Acessar sessão antiga
+* Iniciar nova conversa, mas não enviar mensagem. Logo, não criano a sesão 
+* Verificar a criação do titulo de acordo com a conversa
+
+Além de testes automaticos unitarios que verificam os detalhes da aplicação, como CRUD.
 
 ## O — Optimize
-_Address Big(O) complexity, note that sometimes it doesn't apply, trade-offs, constraints, and opportunities for future improvement._
+```
+let sessionId = currentSessionId;
+if (!sessionId) {
+  try {
+    const session = await createSession();
+    sessionId = session.id;
+    setCurrentSessionId(sessionId);
+    setSessions((prev) => [session, ...prev]);
+  } catch (err) {
+    setError("Erro ao criar sessao.");
+    setBusy(false);
+    return;
+  }
+}
+```
+Faz com que a sessão só seja criada de fato quando for enviado alguma mensagem. Isso previne que sessões sejam criadas e requisições feitas desnecessariamente. Otimizando espaço no banco e carga de requests. Além na poluição visual para o usuario.
